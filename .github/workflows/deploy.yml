@@ -40,7 +40,7 @@ jobs:
         with:
           host: ${{ secrets.AWS_EC2_IP }}
           username: ubuntu
-          key: ${{ secrets.AWS_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
             docker stop task-manager || true
