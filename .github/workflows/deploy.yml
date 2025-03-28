@@ -1,0 +1,35 @@
+name: Deploy to AWS EC2
+
+on:
+  push:
+    branches:
+      - main  # CI/CD will run when push is made to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t task-reminder .
+
+      - name: Push Docker image to Docker Hub
+        run: docker tag task-reminder ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest && docker push ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
+
+      - name: Deploy to AWS EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_EC2_IP }}
+          username: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
+          script: |
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
+            docker stop task-reminder || true
+            docker rm task-reminder || true
+            docker run -d -p 8080:8080 --name task-reminder ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest

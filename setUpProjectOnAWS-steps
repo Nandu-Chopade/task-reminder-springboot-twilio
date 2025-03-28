@@ -1,0 +1,164 @@
+
+**AWS EC2 Setup and Java Installation Guide**
+
+---
+
+## **Step 1: AWS EC2 Instance Setup (Amazon Linux 2023)**
+
+### **1️⃣ Login to AWS Console**  
+- Go to [AWS Console](https://aws.amazon.com/console/)
+- Search for **EC2** and open **EC2 Dashboard**
+
+### **2️⃣ Launch an EC2 Instance**
+- Click **Launch Instance**
+- **Instance Name:** `spring-boot-server`
+- **Select AMI (OS):** Choose **Amazon Linux 2023**
+- **Instance Type:** `t2.micro` (Free-Tier Eligible)
+- **Key Pair:** Create a new key pair (e.g., `whatsappnotification-ec2-key`), then **Download `.pem` file**
+- **Network Settings:**
+  - Allow **SSH (22)** → `My IP`
+  - Allow **HTTP (80), HTTPS (443)** → `Anywhere`
+  - Allow **Custom TCP (8080)** → `Anywhere`
+- Click **Launch Instance**
+- Go to **Instances** and note **Public IP**
+
+### **3️⃣ Connect to EC2 Instance using SSH**
+```sh
+ssh -i "whatsappnotification-ec2-key.pem" ec2-user@<public-ip>
+```
+- If prompted, type **yes** to continue.
+
+---
+
+## **Step 2: Install Java on Amazon Linux 2023**
+
+### **1️⃣ Verify if Java is Installed**
+```sh
+java -version
+```
+**If Java is not found, install it using the following steps.**
+
+### **2️⃣ Update System Packages**
+```sh
+sudo yum update -y
+```
+
+### **3️⃣ Install Amazon Corretto 17 (Recommended for Spring Boot)**
+```sh
+sudo yum install -y java-17-amazon-corretto
+```
+
+### **4️⃣ Verify Java Installation**
+```sh
+java -version
+```
+Expected Output:
+```
+openjdk version "17.0.8" 2023-07-18
+OpenJDK Runtime Environment (Amazon Corretto 17.0.8+7)
+OpenJDK 64-Bit Server VM (Amazon Corretto 17.0.8+7, mixed mode)
+```
+
+### **5️⃣ Set JAVA_HOME (Optional, but Recommended)**
+```sh
+echo 'export JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))' >> ~/.bashrc
+echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.bashrc
+source ~/.bashrc
+```
+
+✅ **Java installation is complete!** 🚀
+
+---
+
+## **Next Steps:**
+- Install **Maven** if required
+- Deploy **Spring Boot JAR** file
+- Set up **GitHub Actions for CI/CD**
+
+**🔹 Document Created for Future Reference & Study.** ✅
+
+
+
+
+
+
+
+
+
+
+
+**MySQL Secure Installation and User Setup Guide**
+
+## 1. **Securing MySQL Installation**
+After installing MySQL on your EC2 instance, run the following command to secure the installation:
+```bash
+sudo mysql_secure_installation
+```
+You will be prompted to set a new root password, remove anonymous users, disallow remote root login, remove the test database, and reload privileges.
+
+### **Steps Involved:**
+1. Enter the existing root password if prompted.
+2. Set a strong new password.
+3. Remove anonymous users.
+4. Disallow remote root login.
+5. Remove the test database.
+6. Reload privilege tables.
+
+## 2. **Creating a New Database and User**
+Once MySQL is secured, log in to MySQL using:
+```bash
+sudo mysql -u root -p
+```
+Then, execute the following commands to create a database and a new user:
+
+```sql
+CREATE DATABASE springbootdb;
+CREATE USER 'springuser'@'%' IDENTIFIED BY 'N4nduCh0p@d3!2025';
+GRANT ALL PRIVILEGES ON springbootdb.* TO 'springuser'@'%';
+FLUSH PRIVILEGES;
+EXIT;
+```
+
+### **Explanation:**
+- `CREATE DATABASE springbootdb;` → Creates a new database named `springbootdb`.
+- `CREATE USER 'springuser'@'%' IDENTIFIED BY 'N4nduCh0p@d3!2025';` → Creates a new user `springuser` with a strong password.
+- `GRANT ALL PRIVILEGES ON springbootdb.* TO 'springuser'@'%';` → Grants full access to the user on the specified database.
+- `FLUSH PRIVILEGES;` → Refreshes MySQL permissions.
+- `EXIT;` → Exits MySQL.
+
+## 3. **Allowing Remote Connections**
+By default, MySQL does not allow external access. To enable this:
+1. Edit the MySQL configuration file:
+```bash
+sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+```
+2. Find the line:
+```
+bind-address = 127.0.0.1
+```
+3. Change it to:
+```
+bind-address = 0.0.0.0
+```
+4. Save and exit (CTRL+X, then Y, then ENTER).
+5. Restart MySQL:
+```bash
+sudo systemctl restart mysql
+```
+
+## 4. **Connecting Remotely to MySQL**
+To connect from another system, use the following command:
+```bash
+mysql -u springuser -p -h <EC2-Public-IP> -P 3306
+```
+Replace `<EC2-Public-IP>` with your actual EC2 instance's public IP.
+
+## 5. **Verifying the Connection**
+To verify, log in to MySQL and run:
+```sql
+SHOW DATABASES;
+```
+You should see `springbootdb` in the list.
+
+This completes your MySQL secure installation and remote connection setup.
+
