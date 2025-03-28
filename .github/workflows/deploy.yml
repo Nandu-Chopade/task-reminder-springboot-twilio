@@ -1,3 +1,5 @@
+# GitHub Actions Workflow for Deploying Spring Boot App to AWS EC2
+
 name: Deploy to AWS EC2
 
 on:
@@ -26,12 +28,12 @@ jobs:
         run: mvn clean package -DskipTests
 
       - name: Build Docker image
-        run: docker build -t task-reminder .
+        run: docker build -t task-manager .
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker tag task-reminder ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
+          docker tag task-manager ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
 
       - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@master
@@ -40,10 +42,10 @@ jobs:
           username: ubuntu
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
-            docker stop task-reminder || true
-            docker rm task-reminder || true
-            docker run -d -p 8080:8080 --name task-reminder \
+            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
+            docker stop task-manager || true
+            docker rm task-manager || true
+            docker run -d -p 8080:8080 --name task-manager \
               -e SPRING_PROFILES_ACTIVE=prod \
               -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
-              ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
+              ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
