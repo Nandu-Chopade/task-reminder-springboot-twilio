@@ -15,13 +15,23 @@ jobs:
 
       - name: Login to Docker Hub
         run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
+      - name: Build Spring Boot application
+        run: mvn clean package -DskipTests
 
       - name: Build Docker image
         run: docker build -t task-reminder .
 
       - name: Push Docker image to Docker Hub
-        run: docker tag task-reminder ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest && docker push ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
+        run: |
+          docker tag task-reminder ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
+          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
 
       - name: Deploy to AWS EC2
         uses: appleboy/ssh-action@master
@@ -33,4 +43,7 @@ jobs:
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
             docker stop task-reminder || true
             docker rm task-reminder || true
-            docker run -d -p 8080:8080 --name task-reminder ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
+            docker run -d -p 8080:8080 --name task-reminder \
+              -e SPRING_PROFILES_ACTIVE=prod \
+              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+              ${{ secrets.DOCKER_HUB_USERNAME }}/task-reminder:latest
