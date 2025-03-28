@@ -1,11 +1,11 @@
-# 1. Base Image (JDK 17 वापरतोय)
+# Use OpenJDK 17 slim as base image
 FROM openjdk:17-jdk-slim
 
-# 2. Work directory सेट करा
+# Set working directory
 WORKDIR /app
 
-# 3. Dependencies install करून application build करा
-COPY ./target/task-reminder.jar /app/task-reminder.jar
+# Copy the generated JAR file
+COPY ./target/task-manager-0.0.1-SNAPSHOT.jar /app/task-manager.jar
 
-# 4. कंटेनर रन करताना हे कमांड चालवा
-ENTRYPOINT ["java", "-jar", "/app/task-reminder.jar"]
+# Command to run the application
+ENTRYPOINT ["java", "-jar", "/app/task-manager.jar"]
