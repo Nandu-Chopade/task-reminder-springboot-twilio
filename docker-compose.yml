@@ -5,17 +5,19 @@ services:
     image: mysql:8
     container_name: mysql-container
     restart: always
-    env_file:
-      - .env
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_DATABASE_FILE: /run/secrets/db_name
+      MYSQL_USER_FILE: /run/secrets/db_user
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    secrets:
+      - db_password
+      - db_name
+      - db_user
 
   app:
     build: .
@@ -23,18 +25,40 @@ services:
     restart: always
     depends_on:
       - mysql-db
-    env_file:
-      - .env
     environment:
-      DB_HOST: mysql-db
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      TWILIO_SID: ${TWILIO_SID}
-      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN}
-      TWILIO_WHATSAPP_NUMBER: ${TWILIO_WHATSAPP_NUMBER}
+      DB_HOST_FILE: /run/secrets/db_host
+      DB_NAME_FILE: /run/secrets/db_name
+      DB_USER_FILE: /run/secrets/db_user
+      DB_PASSWORD_FILE: /run/secrets/db_password
+      TWILIO_SID_FILE: /run/secrets/twilio_sid
+      TWILIO_AUTH_TOKEN_FILE: /run/secrets/twilio_auth_token
+      TWILIO_WHATSAPP_NUMBER_FILE: /run/secrets/twilio_whatsapp_number
     ports:
       - "8080:8080"
+    secrets:
+      - db_host
+      - db_name
+      - db_user
+      - db_password
+      - twilio_sid
+      - twilio_auth_token
+      - twilio_whatsapp_number
+
+secrets:
+  db_host:
+    file: ./secrets/db_host
+  db_name:
+    file: ./secrets/db_name
+  db_user:
+    file: ./secrets/db_user
+  db_password:
+    file: ./secrets/db_password
+  twilio_sid:
+    file: ./secrets/twilio_sid
+  twilio_auth_token:
+    file: ./secrets/twilio_auth_token
+  twilio_whatsapp_number:
+    file: ./secrets/twilio_whatsapp_number
 
 volumes:
   mysql_data:
