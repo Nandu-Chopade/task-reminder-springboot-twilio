@@ -40,11 +40,16 @@ jobs:
           username: ec2-user
           key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            sudo systemctl restart sshd  # Restart the correct SSH service
             docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
             docker stop task-manager || true
             docker rm task-manager || true
             docker run -d -p 8080:8080 --name task-manager \
-              -e SPRING_PROFILES_ACTIVE=prod \
-              -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+              --restart unless-stopped \
+              -e DB_HOST=${{ secrets.DB_HOST }} \
+              -e DB_NAME=${{ secrets.DB_NAME }} \
+              -e DB_USER=${{ secrets.DB_USER }} \
+              -e DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
+              -e TWILIO_SID=${{ secrets.TWILIO_SID }} \
+              -e TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }} \
+              -e TWILIO_WHATSAPP_NUMBER=${{ secrets.TWILIO_WHATSAPP_NUMBER }} \
               ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
