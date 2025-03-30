@@ -1,54 +1,38 @@
-name: Deploy to AWS EC2
+- name: Deploy to AWS EC2
+  uses: appleboy/ssh-action@master
+  with:
+    host: ${{ secrets.AWS_EC2_IP }}
+    username: ec2-user
+    key: ${{ secrets.AWS_SSH_KEY }}
+    script: |
+      # Pull latest image
+      docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
 
-on:
-  push:
-    branches:
-      - main  # CI/CD will run when push is made to the main branch
+      # Stop and remove old containers
+      docker stop task-manager mysql-container || true
+      docker rm task-manager mysql-container || true
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+      # Run MySQL Container (Ensure it runs!)
+      docker run -d --name mysql-container \
+        -e MYSQL_ROOT_PASSWORD=N4nduCh0p@d3!2025 \
+        -e MYSQL_DATABASE=springbootdb \
+        -e MYSQL_USER=ec2user \
+        -e MYSQL_PASSWORD=N4nduCh0p@d3!2025 \
+        -p 3306:3306 \
+        --restart unless-stopped \
+        mysql:8
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      # Wait for MySQL to Start
+      sleep 20
 
-      - name: Login to Docker Hub
-        run: echo "${{ secrets.DOCKER_HUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
-
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Build Spring Boot application
-        run: mvn clean package -DskipTests
-
-      - name: Build Docker image
-        run: docker build -t task-manager .
-
-      - name: Push Docker image to Docker Hub
-        run: |
-          docker tag task-manager ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
-          docker push ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
-
-      - name: Deploy to AWS EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.AWS_EC2_IP }}
-          username: ec2-user
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
-            docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
-            docker stop task-manager || true
-            docker rm task-manager || true
-            docker run -d -p 8080:8080 --name task-manager \
-              --restart unless-stopped \
-              -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql-db:3306/springbootdb?allowPublicKeyRetrieval=true&useSSL=false" \
-              -e SPRING_DATASOURCE_USERNAME="ec2user" \
-              -e SPRING_DATASOURCE_PASSWORD="N4nduCh0p@d3!2025" \
-              -e TWILIO_SID="${{ secrets.TWILIO_SID }}" \
-              -e TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
-              -e TWILIO_WHATSAPP_NUMBER="${{ secrets.TWILIO_WHATSAPP_NUMBER }}" \
-              ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
+      # Run Task Manager App (Link to MySQL)
+      docker run -d -p 8080:8080 --name task-manager \
+        --restart unless-stopped \
+        --link mysql-container:mysql-db \
+        -e SPRING_DATASOURCE_URL="jdbc:mysql://mysql-container:3306/springbootdb?allowPublicKeyRetrieval=true&useSSL=false" \
+        -e SPRING_DATASOURCE_USERNAME="ec2user" \
+        -e SPRING_DATASOURCE_PASSWORD="N4nduCh0p@d3!2025" \
+        -e TWILIO_SID="${{ secrets.TWILIO_SID }}" \
+        -e TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
+        -e TWILIO_WHATSAPP_NUMBER="${{ secrets.TWILIO_WHATSAPP_NUMBER }}" \
+        ${{ secrets.DOCKER_HUB_USERNAME }}/task-manager:latest
