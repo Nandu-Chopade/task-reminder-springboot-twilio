@@ -6,26 +6,31 @@ services:
     container_name: mysql-container
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: my-secret-password
-      MYSQL_DATABASE: task_db
-      MYSQL_USER: task_user
-      MYSQL_PASSWORD: task_pass
+      MYSQL_ROOT_PASSWORD: N4nduCh0p@d3!2025
+      MYSQL_DATABASE: springbootdb
+      MYSQL_USER: ec2user
+      MYSQL_PASSWORD: N4nduCh0p@d3!2025
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql  
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
 
   app:
     build: .
     container_name: springboot-app
     restart: always
     depends_on:
-      - mysql-db
+      mysql-db:
+        condition: service_healthy
     environment:
-      DB_HOST: mysql-db
-      DB_NAME: task_db
-      DB_USER: task_user
-      DB_PASSWORD: task_pass
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/springbootdb?allowPublicKeyRetrieval=true&useSSL=false
+      SPRING_DATASOURCE_USERNAME: ec2user
+      SPRING_DATASOURCE_PASSWORD: N4nduCh0p@d3!2025
       TWILIO_SID: AC8cec0ed814b2f652f0050416e00a5a00
       TWILIO_AUTH_TOKEN: 48be69dcf45a8186dd97723a4ba6f54b
       TWILIO_WHATSAPP_NUMBER: whatsapp:+14155238886
@@ -34,4 +39,4 @@ services:
 
 volumes:
   mysql_data:
-    driver: local  
+    driver: local
